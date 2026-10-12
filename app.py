@@ -45,7 +45,8 @@ def create_order():
     #   Call payment_gateway.charge(order_id, amount) and return its
     #   result as JSON with a 200 status code.
     # ------------------------------------------------------------------
-
+    # result = payment_gateway.charge(order_id, amount)
+    # return jsonify(result), 200
     # ------------------------------------------------------------------
     # LEVEL 2 (30 pts) — Make it reliable
     #   a) Pass idempotency_key through to charge() so a retried request
@@ -53,7 +54,15 @@ def create_order():
     #   b) If PaymentGatewayError is raised, retry up to 3 times total
     #      before giving up (add a short backoff between attempts).
     # ------------------------------------------------------------------
-
+    for attempt in range(3):
+        try:
+            result = payment_gateway.charge(order_id, amount, idempotency_key=idempotency_key)
+            return jsonify(result), 200
+        except PaymentGatewayError:
+            if attempt == 2:
+                return jsonify({"error": "Payment failed after 3 attempts"}), 502
+            time.sleep(0.1)
+    return jsonify({"error": "Payment failed"}), 502
     # ------------------------------------------------------------------
     # LEVEL 3 (20 pts) — Go asynchronous
     #   After a successful charge, send a confirmation via
